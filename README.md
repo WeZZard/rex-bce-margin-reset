@@ -71,11 +71,33 @@ ESC[<row>;1H  ESC[0m  ESC[2K  <line>
 Measured in the same Rex pane: the rows below a full-width green block still turn
 green (78.4% of the editor band, the same as without the reset).
 
+Moving the cursor off the margin before the reset does not help either. Rex keeps the
+pending-wrap state across a one-cell cursor-left, so the reset is still dropped:
+
+```
+ESC[<row>;1H  ESC[48;2;37;65;49m  <cols spaces>  ESC[1D  ESC[0m
+```
+
+That frame floods 78.4% of the editor band as well. The reset has to arrive *before*
+the margin, not after the row has been painted.
+
 ## Workaround
 
 Keep the last column of a styled row on the default background. Pad the styled line
 to `cols - 1`, then emit the reset: the row's last cell is default, and the next row's
 erase inherits that. This is what `repro.py short` does, and it stays clean.
+
+If the row has to keep its full width, write the reset before the final cell and put
+that cell on the default background:
+
+```
+ESC[<row>;1H  ESC[2K  <styled cols-1 cells>  ESC[0m  <final cell>
+```
+
+The final cell keeps its glyph (foreground and attributes survive), but its background
+is default, so the pen is reset at the end of the row. This is the shape of the Pi fix
+(branch `fix/tui-reset-before-last-cell`): 128 frames in the same VM, 0% of the editor
+band green, with the green tool blocks still rendering.
 
 ## Who to talk to
 
