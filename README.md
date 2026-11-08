@@ -58,18 +58,24 @@ background unreset when the erase happens.
 
 ![Pi panel flooded green](screens/pi.png)
 
-## Workaround
+## What does not work
 
-Emit the reset before the erase instead of relying on the previous row's trailing
-reset:
+Emitting the reset before the erase does not help. Rex paints the erase with the
+background of the previous row's *last cell*, not the current SGR state, so a reset
+that arrives after the previous row is already painted changes nothing:
 
 ```
 ESC[<row>;1H  ESC[0m  ESC[2K  <line>
 ```
 
-Then no row can inherit a background the terminal failed to reset. This is the fix
-being proposed to `pi-tui`; it costs four bytes per row and removes the dependency on
-the terminal's margin behaviour.
+Measured in the same Rex pane: the rows below a full-width green block still turn
+green (78.4% of the editor band, the same as without the reset).
+
+## Workaround
+
+Keep the last column of a styled row on the default background. Pad the styled line
+to `cols - 1`, then emit the reset: the row's last cell is default, and the next row's
+erase inherits that. This is what `repro.py short` does, and it stays clean.
 
 ## Who to talk to
 
