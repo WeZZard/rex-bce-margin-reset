@@ -46,3 +46,6 @@ for _ in range(20):
 
 out.write("\x1b[1;1H")
 out.flush()
+time.sleep(20)            # hold the frame so it can be looked at
+out.write("\x1b[?1049l")  # restore the pane
+out.flush()
